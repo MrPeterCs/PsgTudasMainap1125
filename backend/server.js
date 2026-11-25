@@ -11,10 +11,8 @@ app.use(express.json());
 const PORT = 3001;
 
 const { authMiddleware, adminMiddleware } = require("./authMiddleware");
-
 app.post("/api/register", async (req, res) => {
   try {
-    //itt adjuk meg, hogy a frontendről mit küldtünk a body-ban a backendre
     const { name, email, password } = req.body;
 
     if (typeof password !== "string" || password.length < 8) {
@@ -22,14 +20,11 @@ app.post("/api/register", async (req, res) => {
         message: "A jelszónak minimum 8 karakterből kell állnia!",
       });
     }
-    //lekérdezük, hogy van-e ilyen regisztrált felhasználó
     const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
       email,
     ]);
-    //ha a lekérdezés sikeres volt, akkor a users tömbben már van adat, mivel van benne, ezért a hossza > 0 -> email foglalt
     if (users.length > 0)
       return res.status(400).json({ message: "Ez az email cím már foglalt!" });
-    //ha nem foglalt az email, akkor password hash és insert into az adatbázisba
     const hashedPassword = await bcrypt.hash(password, 10);
     await db.query("INSERT INTO users (name, email, password) VALUES (?,?,?)", [
       name,
@@ -178,6 +173,66 @@ app.delete(
     }
   },
 );
+//userestema
+app.get("/api/users", async (req, res) => {
+  try {
+    const [products] = await db.query("SELECT * FROM users");
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Szerverhiba!" });
+  }
+});
+
+app.put(
+  "/api/users/:id",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const userid = req.user.id;
+      if (userid != req.params.id) return res.status(418).json({ message: "NINCSEN EHHEZ SEMMMI JOGOD TE KUTYAHAHAHHAHAHAH" })
+      const hashedPassword = await bcrypt.hash(password, 10);
+      if (name == null) return res.status(400).json({ message: "Add meg a mostani neved ha nem akarod megváltoztatni!" });
+      if (email == null) return res.status(400).json({ message: "Add meg a mostani email címed ha nem akarod megváltoztatni!" });
+      if (password) {
+        const [result] = await db.query(
+          "UPDATE users SET name=?, email=?, password=?, role=0 WHERE id = ?",
+          [name, email, hashedPassword, req.params.id],
+        );
+        res.json({ message: "Adataid módosítva!" });
+      }
+      else{
+                const [result] = await db.query(
+          "UPDATE users SET name=?, email=? WHERE id = ?",
+          [name, email, req.params.id],
+        );
+        res.json({ message: "Adataid módosítva!" });
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Szerverhiba történt!" });
+    }
+  },
+);
+app.delete(
+  "/api/users/:id",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const [result] = await db.query("DELETE FROM products WHERE id = ?", [
+        req.params.id,
+      ]);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Nincs ilyen termék!" });
+      }
+      res.json({ message: "Termék törölve!" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Szerverhiba történt!" });
+    }
+  },
+);
+
 app.listen(PORT, () => {
   console.log(`A szerver sikeresen fut a következő porton: ${PORT}`);
 });
