@@ -156,3 +156,6 @@ A repositoryban található feladatok **gyakorlási segédanyagok**, amelyek az 
 A feladatok ismerete és megértése ajánlott, azonban a repository tartalma **nem jelenti azt, hogy minden itt szereplő feladat biztosan része lesz a számonkérésnek**.
 
 **Sok sikert a felkészüléshez! 🚀**
+=======
+# PsgTudasMainap1125
+>>>>>>> 2ced3462d4829091b067f403a369846a900340b8
